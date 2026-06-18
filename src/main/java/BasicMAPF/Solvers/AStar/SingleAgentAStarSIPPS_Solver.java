@@ -94,7 +94,7 @@ public class SingleAgentAStarSIPPS_Solver extends SingleAgentAStarSIPP_Solver{
         //////////////////////////////////////////////////////////////////////////////////////////////
         // if (safeIntervalsForGoal != null) {
         if (safeIntervalsForGoal != null && // there are safe intervals for the goal
-                !(transientMAPFSettings.isTransientMAPF() && agent.isUA)
+                !(transientMAPFSettings.isTransientMAPF() && targetCoor.equals(sourceCoor)) // not a transient MAPF agent that starts at the target
         ) {
         ////////////////////////////////////////////////////////////////////////////////////////////
             TimeInterval lastInterval = safeIntervalsForGoal.get(safeIntervalsForGoal.size()-1);

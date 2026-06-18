@@ -12,9 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import BasicMAPF.CostFunctions.ConflictsCount;
 import BasicMAPF.CostFunctions.FuelAssigned;
-import BasicMAPF.CostFunctions.I_SolutionCostFunction;
 import BasicMAPF.CostFunctions.SumFuel;
-import BasicMAPF.CostFunctions.SumNUA;
 import BasicMAPF.CostFunctions.SumServiceTimes;
 import BasicMAPF.CostFunctions.SumServiceTimesAll;
 import BasicMAPF.DataTypesAndStructures.MDDs.OnePathAStarMDDBuilderFactory;
@@ -655,72 +653,7 @@ public class CanonicalSolversFactory {
 ///////////////////////////////////////////////////////////////////////  Dynamic UA  //////////////////////////////////////////////////////////////////////////////
  
 //////////////////////////////////////////////////  CBS  //////////////////////////////////////////////////////////////////////////////
-
-    private static CBS_Solver createUaCbsVariant(String variantName, I_SolutionCostFunction costFunction,
-                                                  boolean uaBypass, boolean uaFutureConflictHeuristic) {
-        CBS_Solver solver = new CBSBuilder()
-                .setCostFunction(costFunction)
-                .setTransientMAPFSettings(TransientMAPFSettings.defaultTransientMAPF)
-                .setUaAwareLowLevel(true)
-                .setUaBypass(uaBypass)
-                .setUaFutureConflictHeuristic(uaFutureConflictHeuristic)
-                .createCBS_Solver();
-        solver.setName(variantName + "_" + costFunction.name());
-        solver.setConfiguredCostFunctionName(costFunction.name());
-        return solver;
-    }
-
-    // Variant 1: assigned Manhattan heuristic; UA zero heuristic, no route look-ahead.
-    public static CBS_Solver createCBS_UA_NoHeuristic_SST_Solver() {
-        return createUaCbsVariant("CBS_UA_NoHeuristic", new SumServiceTimes(), false, false);
-    }
-
-    public static CBS_Solver createCBS_UA_NoHeuristic_Fuel_Solver() {
-        return createUaCbsVariant("CBS_UA_NoHeuristic", new SumFuel(), false, false);
-    }
-
-    public static CBS_Solver createCBS_UA_NoHeuristic_NUA_Solver() {
-        return createUaCbsVariant("CBS_UA_NoHeuristic", new SumNUA(), false, false);
-    }
-
-    // Variant 2: variant 1 plus same-node UA bypass.
-    public static CBS_Solver createCBS_UA_Bypass_SST_Solver() {
-        return createUaCbsVariant("CBS_UA_Bypass", new SumServiceTimes(), true, false);
-    }
-
-    public static CBS_Solver createCBS_UA_Bypass_Fuel_Solver() {
-        return createUaCbsVariant("CBS_UA_Bypass", new SumFuel(), true, false);
-    }
-
-    public static CBS_Solver createCBS_UA_Bypass_NUA_Solver() {
-        return createUaCbsVariant("CBS_UA_Bypass", new SumNUA(), true, false);
-    }
-
-    // Variant 3: UA BFS/Dijkstra search with future conflict avoidance.
-    public static CBS_Solver createCBS_UA_Heuristic_SST_Solver() {
-        return createUaCbsVariant("CBS_UA_Heuristic", new SumServiceTimes(), false, true);
-    }
-
-    public static CBS_Solver createCBS_UA_Heuristic_Fuel_Solver() {
-        return createUaCbsVariant("CBS_UA_Heuristic", new SumFuel(), false, true);
-    }
-
-    public static CBS_Solver createCBS_UA_Heuristic_NUA_Solver() {
-        return createUaCbsVariant("CBS_UA_Heuristic", new SumNUA(), false, true);
-    }
-
-    // Variant 4: future conflict avoidance plus same-node UA bypass.
-    public static CBS_Solver createCBS_UA_BypassHeuristic_SST_Solver() {
-        return createUaCbsVariant("CBS_UA_BypassHeuristic", new SumServiceTimes(), true, true);
-    }
-
-    public static CBS_Solver createCBS_UA_BypassHeuristic_Fuel_Solver() {
-        return createUaCbsVariant("CBS_UA_BypassHeuristic", new SumFuel(), true, true);
-    }
-
-    public static CBS_Solver createCBS_UA_BypassHeuristic_NUA_Solver() {
-        return createUaCbsVariant("CBS_UA_BypassHeuristic", new SumNUA(), true, true);
-    }
+ 
 
     /**
      *

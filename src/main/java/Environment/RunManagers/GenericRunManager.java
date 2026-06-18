@@ -53,25 +53,12 @@ public class GenericRunManager extends A_RunManager {
 
 //───────────────────────────────────────────── Dynamic UA ─────────────────────────────────────────────
 
-        // CBS UA variant 1: A=Manhattan, UA=zero heuristic.
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_NoHeuristic_SST_Solver());
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_NoHeuristic_Fuel_Solver());
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_NoHeuristic_NUA_Solver());
-
-        // CBS UA variant 2: variant 1 + same-node UA bypass.
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_Bypass_SST_Solver());
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_Bypass_Fuel_Solver());
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_Bypass_NUA_Solver());
-
-        // CBS UA variant 3: UA future-conflict heuristic (BFS/Dijkstra-style).
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_Heuristic_SST_Solver());
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_Heuristic_Fuel_Solver());
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_Heuristic_NUA_Solver());
-
-        // CBS UA variant 4: future-conflict heuristic + same-node UA bypass.
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_BypassHeuristic_SST_Solver());
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_BypassHeuristic_Fuel_Solver());
-        super.solvers.add(CanonicalSolversFactory.createCBS_UA_BypassHeuristic_NUA_Solver());
+        // CBS:
+        super.solvers.add(CanonicalSolversFactory.createCBS_UA_SST_Solver());           // SST
+        super.solvers.add(CanonicalSolversFactory.createCBS_UA_Fuel_Solver());          // Fuel
+        super.solvers.add(CanonicalSolversFactory.createMinNUACBSSolver());             // NUA (CBS with LaCAM)
+        super.solvers.add(CanonicalSolversFactory.createCBS_UA_SST_ALL_Solver());       // SST All
+        super.solvers.add(CanonicalSolversFactory.createCBS_UA_Fuel_Assigned_Solver()); // FUEL Assigned
 
         // A*+OD:
         super.solvers.add(CanonicalSolversFactory.createAStartOD_UA_SST_Solver());      // SST
@@ -120,7 +107,7 @@ public class GenericRunManager extends A_RunManager {
     public static int countUnassignedAgents(MAPF_Instance instance) {
         int count = 0;
         for (Agent a : instance.agents) {
-            if (a.isUA) count++;
+            if (a.source.equals(a.target)) count++; 
         }
         return count;
     }

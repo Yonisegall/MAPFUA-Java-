@@ -21,9 +21,6 @@ public class CBSBuilder {
     private TransientMAPFSettings transientMAPFSettings = null;
     private boolean staticObstaclesForUnassignedAgents = false;
     private boolean staticUAForUnassignedAgents = false;
-    private boolean localRepairForUaConflicts = false;
-    private boolean uaFutureConflictHeuristic = false;
-    private boolean uaAwareLowLevel = false;
     private Set<Agent> staticUA = null;
 
     public CBSBuilder setLowLevelSolver(I_Solver lowLevelSolver) {
@@ -84,32 +81,12 @@ public class CBSBuilder {
         return this;
     }
 
-    public CBSBuilder setLocalRepairForUaConflicts(boolean localRepairForUaConflicts) {
-        this.localRepairForUaConflicts = localRepairForUaConflicts;
-        return this;
-    }
-
-    public CBSBuilder setUaBypass(boolean enabled) {
-        this.localRepairForUaConflicts = enabled;
-        return this;
-    }
-
-    public CBSBuilder setUaFutureConflictHeuristic(boolean enabled) {
-        this.uaFutureConflictHeuristic = enabled;
-        return this;
-    }
-
-    public CBSBuilder setUaAwareLowLevel(boolean enabled) {
-        this.uaAwareLowLevel = enabled;
-        return this;
-    }
-
     // public CBS_Solver createCBS_Solver() {
     //     return new CBS_Solver(lowLevelSolver, openList, openListManagementMode, costFunction, cbsNodeComparator, useCorridorReasoning, sharedGoals, sharedSources, transientMAPFSettings, staticObstaclesForUnassignedAgents);
     // }
 
     public CBS_Solver createCBS_Solver() {
-        CBS_Solver solver = new CBS_Solver(lowLevelSolver, openList, openListManagementMode, costFunction, cbsNodeComparator, useCorridorReasoning, sharedGoals, sharedSources, transientMAPFSettings, staticObstaclesForUnassignedAgents, localRepairForUaConflicts, uaFutureConflictHeuristic, uaAwareLowLevel);
+        CBS_Solver solver = new CBS_Solver(lowLevelSolver, openList, openListManagementMode, costFunction, cbsNodeComparator, useCorridorReasoning, sharedGoals, sharedSources, transientMAPFSettings, staticObstaclesForUnassignedAgents);
         if (this.staticUAForUnassignedAgents) {
             solver.setStaticUA(staticUA);
         }

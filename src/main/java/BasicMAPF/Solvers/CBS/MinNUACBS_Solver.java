@@ -249,7 +249,7 @@ public class MinNUACBS_Solver extends A_Solver {
     private List<Agent> getUAAgents(MAPF_Instance instance) {
         List<Agent> ua = new ArrayList<>();
         for (Agent a : instance.agents) {
-            if (a.isUA) ua.add(a);
+            if (a.source.equals(a.target)) ua.add(a);
         }
         return ua;
     }
@@ -283,7 +283,7 @@ public class MinNUACBS_Solver extends A_Solver {
     }
 
     private boolean isUA(Agent a) {
-        return a.isUA;
+        return a.source.equals(a.target);
     }
 
     private void absorbCBSMetrics(InstanceReport cbsReport) {

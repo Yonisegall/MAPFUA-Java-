@@ -142,7 +142,7 @@ public class MinNUAAStarODLaCAM_Solver extends A_Solver {
 
     private List<Agent> getUAAgents(MAPF_Instance instance) {
         List<Agent> ua = new ArrayList<>();
-        for (Agent a : instance.agents) if (a.isUA) ua.add(a);
+        for (Agent a : instance.agents) if (a.source.equals(a.target)) ua.add(a);
         return ua;
     }
 
@@ -150,7 +150,7 @@ public class MinNUAAStarODLaCAM_Solver extends A_Solver {
         Set<Integer> moved = new HashSet<>();
         for (var plan : sol) {
             Agent a = plan.agent;
-            if (!a.isUA) continue;
+            if (!a.source.equals(a.target)) continue;
             var source = instance.map.getMapLocation(a.source);
             for (var mv : plan) {
                 if (!mv.currLocation.equals(source)) { moved.add(a.iD); break; }

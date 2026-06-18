@@ -110,7 +110,7 @@ public class MAPF_Instance {
     public int getNumOfUAgents(){
         int count = 0;
         for (Agent a : agents) {
-            if (a.isUA) {
+            if (a.source.equals(a.target)) {
                 count++;
             }
         }

@@ -57,7 +57,7 @@ public class SumNUA implements I_SolutionCostFunction {
                 : (instance.map instanceof I_GridMap ? ((I_GridMap) instance.map).getWidth() * ((I_GridMap) instance.map).getHeight() : 0);
 
         int numUA = 0;
-        for (Agent a : instance.agents) if (a.isUA) numUA++;
+        for (Agent a : instance.agents) if (a.source.equals(a.target)) numUA++;
         this.nuaAgents = numUA;
     }
 

@@ -106,7 +106,7 @@ public class AStarOD_Solver extends A_Solver {
         if (this.staticObstaclesForUnassignedAgents && (this.staticUA == null || this.staticUA.isEmpty())) {
             java.util.HashSet<Integer> allUAIds = new java.util.HashSet<>();
             for (Agent a : this.agents) {
-                if (a.isUA) allUAIds.add(a.iD);
+                if (a.source.equals(a.target)) allUAIds.add(a.iD);
             }
             if (!allUAIds.isEmpty()) {
                 setupStaticUAByIds(allUAIds);
@@ -244,8 +244,8 @@ public class AStarOD_Solver extends A_Solver {
             startPositions[i] = source;
 
             // MAPFUA trick:
-            // Unassigned agents are considered to have already visited the target at t=0.
-            visitedTargets[i] = a.isUA;
+            // Unassigned agents have source == target, so they are considered to have already visited the target at t=0.
+            visitedTargets[i] = a.source.equals(a.target);
         }
 
         float h = heuristicForFull(startPositions, visitedTargets);
@@ -257,7 +257,7 @@ public class AStarOD_Solver extends A_Solver {
      * Goal condition:
      * all agents have visited their target at least once.
      *
-     * For UA agents, this is already true at time 0.
+     * For UA agents with source==target, this is already true at time 0.
      */
     private boolean isGoal(FullNode node) {
         if (this.transientMAPFSettings != null && this.transientMAPFSettings.isTransientMAPF()) {

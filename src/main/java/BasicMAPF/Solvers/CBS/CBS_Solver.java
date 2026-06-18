@@ -29,7 +29,6 @@ import BasicMAPF.Solvers.AStar.CostsAndHeuristics.FuelGAndH;
 import BasicMAPF.Solvers.AStar.CostsAndHeuristics.NUAGAndH;
 import BasicMAPF.Solvers.AStar.CostsAndHeuristics.ServiceTimeGAndH;
 import BasicMAPF.Solvers.AStar.CostsAndHeuristics.SingleAgentGAndH;
-import BasicMAPF.Solvers.AStar.CostsAndHeuristics.UAAwareManhattanDistance;
 import BasicMAPF.Solvers.AStar.RunParameters_SAAStar;
 import BasicMAPF.Solvers.AStar.SingleAgentAStar_Solver;
 import BasicMAPF.Solvers.A_Solver;
@@ -116,14 +115,9 @@ public class CBS_Solver extends A_Solver {
     private final boolean sharedSources;
     private Set<I_Coordinate> separatingVerticesSet;
     private final boolean staticObstaclesForUnassignedAgents;
-    private final boolean localRepairForUaConflicts;
-    private final boolean uaFutureConflictHeuristic;
-    private final boolean uaAwareLowLevel;
     private List<Agent> unassignedAgents = null;
     private Set<Agent> staticUA = null;
     private Solution initialSolution = null;
-    private int uaLocalRepairAttempts = 0;
-    private int uaLocalRepairSuccesses = 0;
 
     /*  = Constructors =  */
 
@@ -139,9 +133,7 @@ public class CBS_Solver extends A_Solver {
 
     CBS_Solver(@Nullable I_Solver lowLevelSolver, @Nullable I_OpenList<CBS_Node> openList, @Nullable OpenListManagementMode openListManagementMode,
                @Nullable I_SolutionCostFunction costFunction, @Nullable Comparator<? super CBS_Node> cbsNodeComparator, @Nullable Boolean useCorridorReasoning,
-               @Nullable Boolean sharedGoals, @Nullable Boolean sharedSources, @Nullable TransientMAPFSettings transientMAPFSettings,
-               @Nullable Boolean staticObstaclesForUnassignedAgents, @Nullable Boolean localRepairForUaConflicts,
-               @Nullable Boolean uaFutureConflictHeuristic, @Nullable Boolean uaAwareLowLevel) {
+               @Nullable Boolean sharedGoals, @Nullable Boolean sharedSources, @Nullable TransientMAPFSettings transientMAPFSettings, @Nullable Boolean staticObstaclesForUnassignedAgents) {
 
         this.lowLevelSolver = Objects.requireNonNullElseGet(lowLevelSolver, SingleAgentAStar_Solver::new);
         this.openList = Objects.requireNonNullElseGet(openList, OpenListHeap::new);
@@ -159,9 +151,6 @@ public class CBS_Solver extends A_Solver {
         }
 
         this.staticObstaclesForUnassignedAgents = Objects.requireNonNullElse(staticObstaclesForUnassignedAgents, false);
-        this.localRepairForUaConflicts = Objects.requireNonNullElse(localRepairForUaConflicts, false);
-        this.uaFutureConflictHeuristic = Objects.requireNonNullElse(uaFutureConflictHeuristic, false);
-        this.uaAwareLowLevel = Objects.requireNonNullElse(uaAwareLowLevel, false);
 
         if (this.transientMAPFSettings.isTransientMAPF()) {
             super.name = "CBS_Dynamic_UA";
@@ -176,7 +165,7 @@ public class CBS_Solver extends A_Solver {
      * Default constructor.
      */
     CBS_Solver() {
-        this(null, null, null, null, null, null, null, null, null, null, null, null, null);
+        this(null, null, null, null, null, null, null, null, null, null);
     }
 
     /*  = initialization =  */
@@ -193,7 +182,7 @@ public class CBS_Solver extends A_Solver {
             this.unassignedAgents = new ArrayList<>();
             List<Agent> newAgentsList = new ArrayList<>();
             for (Agent agent : instance.agents) {
-                if (agent.isUA) {
+                if (agent.target.equals(agent.source)) {
                     Constraint infiniteConstraint = new GoalConstraint(null, 1, null, instance.map.getMapLocation(agent.source), agent);
                     this.initialConstraints.add(infiniteConstraint);
                     this.unassignedAgents.add(agent);
@@ -225,8 +214,6 @@ public class CBS_Solver extends A_Solver {
         this.currentConstraints = new ConstraintSet();
         this.generatedNodes = 0;
         this.expandedNodes = 0;
-        this.uaLocalRepairAttempts = 0;
-        this.uaLocalRepairSuccesses = 0;
         this.instance = instance;
 
         if (this.costFunction instanceof BasicMAPF.CostFunctions.SumNUA) {
@@ -239,9 +226,7 @@ public class CBS_Solver extends A_Solver {
         }
         else {
             if (this.lowLevelSolver instanceof SingleAgentAStar_Solver){
-                this.singleAgentGAndH = this.uaAwareLowLevel
-                        ? new UAAwareManhattanDistance()
-                        : new DistanceTableSingleAgentHeuristic(new ArrayList<>(instance.agents), instance.map);
+                this.singleAgentGAndH = new DistanceTableSingleAgentHeuristic(new ArrayList<>(instance.agents), instance.map);
             }
 
             if (this.singleAgentGAndH instanceof CachingDistanceTableHeuristic){
@@ -311,12 +296,8 @@ public class CBS_Solver extends A_Solver {
             }
         } else {
             solution = this.transientMAPFSettings.isTransientMAPF() ? new TransientMAPFSolution() : new Solution();
-            List<Agent> planningOrder = new ArrayList<>(this.instance.agents);
-            if (this.uaFutureConflictHeuristic) {
-                // Plan all assigned routes first so every UA can see and avoid them.
-                planningOrder.sort(Comparator.comparing(agent -> agent.isUA));
-            }
-            for (Agent agent : planningOrder) {
+            // for every agent, add its plan to the solution
+            for (Agent agent : this.instance.agents) {
                 solution = solveSubproblem(agent, solution, initialConstraints);
                 if (solution == null){
                     // failed to solve for some agent
@@ -344,10 +325,6 @@ public class CBS_Solver extends A_Solver {
                 return node;
             }
             else {
-                if (this.localRepairForUaConflicts && tryBypassUaOnlyConflicts(node)) {
-                    openList.add(node);
-                    continue;
-                }
                 if (this.transientMAPFSettings.resolveAfterGoalConflictsLocally()) {
                     if (tryResolveConflictsLocally(node)) {
                         openList.add(node);
@@ -380,69 +357,6 @@ public class CBS_Solver extends A_Solver {
             cat.addPlan(plan);
         }
         return cat;
-    }
-
-    /**
-     * Bypasses CT branching when all remaining conflicts involve at least one
-     * UA. Only a conflicting UA is replanned and the repaired solution is put
-     * back into the same high-level node.
-     */
-    private boolean tryBypassUaOnlyConflicts(CBS_Node node) {
-        if (node.selectedConflict == null || hasAssignedAssignedConflict(node.solution)) {
-            return false;
-        }
-        this.uaLocalRepairAttempts++;
-
-        Solution originalSolution = node.getSolution();
-        int originalConflictCount = originalSolution.countConflicts(this.sharedGoals, this.sharedSources);
-        Constraint[] preventingConstraints = node.selectedConflict.getPreventingConstraints();
-
-        for (Constraint preventingConstraint : preventingConstraints) {
-            Agent ua = preventingConstraint.agent;
-            if (!ua.isUA) {
-                continue;
-            }
-
-            Solution repairedSolution = transientMAPFSettings.isTransientMAPF() ?
-                    new TransientMAPFSolution(originalSolution) : new Solution(originalSolution);
-            repairedSolution.putPlan(new SingleAgentPlan(ua));
-
-            Solution repairedUaSolution = solveSubproblem(
-                    ua, repairedSolution, buildConstraintSet(node, preventingConstraint));
-            if (repairedUaSolution == null || repairedUaSolution.getPlanFor(ua) == null) {
-                continue;
-            }
-
-            repairedSolution.putPlan(repairedUaSolution.getPlanFor(ua));
-            int repairedConflictCount = repairedSolution.countConflicts(this.sharedGoals, this.sharedSources);
-            if (repairedConflictCount >= originalConflictCount) {
-                continue;
-            }
-
-            node.replaceSolution(repairedSolution, costFunction.solutionCost(repairedSolution));
-            node.setSelectedConflict(null);
-            this.uaLocalRepairSuccesses++;
-            return true;
-        }
-        return false;
-    }
-
-    private boolean hasAssignedAssignedConflict(Solution solution) {
-        List<SingleAgentPlan> assignedPlans = new ArrayList<>();
-        for (SingleAgentPlan plan : solution) {
-            if (!plan.agent.isUA) {
-                assignedPlans.add(plan);
-            }
-        }
-        for (int i = 0; i < assignedPlans.size(); i++) {
-            for (int j = i + 1; j < assignedPlans.size(); j++) {
-                if (assignedPlans.get(i).conflictsWith(
-                        assignedPlans.get(j), this.sharedGoals, this.sharedSources)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private boolean isGoal(CBS_Node node) {
@@ -609,21 +523,19 @@ public class CBS_Solver extends A_Solver {
                 astarSubproblemParameters.goalCondition = TransientMAPFUtils.createLowLevelGoalConditionForTransientMAPF(transientMAPFSettings, separatingVerticesSet, instance.agents, agent, null);
             }
 
-            I_ConflictAvoidanceTable cat = null;
-            boolean useConflictAvoidance = !agent.isUA || this.uaFutureConflictHeuristic;
-            if (useConflictAvoidance) {
-                if (this.transientMAPFSettings.isTransientMAPF()){
-                    // This CAT also evaluates conflicts caused by staying forever at a candidate location.
-                    if (this.sharedGoals || this.sharedSources){
-                        throw new UnsupportedOperationException("Shared goals and shared sources are not supported in TMAPF");
-                    }
-                    cat = new RemovableConflictAvoidanceTableWithContestedGoals(currentSolution, agent);
+            I_ConflictAvoidanceTable cat;
+            if (this.transientMAPFSettings.isTransientMAPF()){
+                // Use RemovableConflictAvoidanceTableWithContestedGoals for TMAPF in CBS, because it correctly counts the number of conflicts after a target is reached.
+                if (this.sharedGoals || this.sharedSources){
+                    // should be verified earlier, but just in case
+                    throw new UnsupportedOperationException("Shared goals and shared sources are not supported in TMAPF");
                 }
-                else{
-                    cat = new SingleUseConflictAvoidanceTable(currentSolution, agent);
-                    ((SingleUseConflictAvoidanceTable)cat).sharedGoals = this.sharedGoals;
-                    ((SingleUseConflictAvoidanceTable)cat).sharedSources = this.sharedSources;
-                }
+                cat = new RemovableConflictAvoidanceTableWithContestedGoals(currentSolution, agent);
+            }
+            else{
+                cat = new SingleUseConflictAvoidanceTable(currentSolution, agent);
+                ((SingleUseConflictAvoidanceTable)cat).sharedGoals = this.sharedGoals;
+                ((SingleUseConflictAvoidanceTable)cat).sharedSources = this.sharedSources;
             }
             astarSubproblemParameters.conflictAvoidanceTable = cat;
             subproblemParametes = astarSubproblemParameters;
@@ -729,8 +641,6 @@ public class CBS_Solver extends A_Solver {
             super.instanceReport.putStringValue(InstanceReport.StandardFields.solutionCostFunction, costFunction.name());
             super.instanceReport.putFloatValue(InstanceReport.StandardFields.solutionCost, costFunction.solutionCost(solution));
         }
-        super.instanceReport.putIntegerValue("UA Local Repair Attempts", this.uaLocalRepairAttempts);
-        super.instanceReport.putIntegerValue("UA Local Repair Successes", this.uaLocalRepairSuccesses);
     }
 
     @Override
@@ -823,11 +733,6 @@ public class CBS_Solver extends A_Solver {
          */
         public void setSelectedConflict(A_Conflict selectedConflict) {
             this.selectedConflict = selectedConflict;
-        }
-
-        private void replaceSolution(Solution solution, float solutionCost) {
-            this.solution = solution;
-            this.solutionCost = solutionCost;
         }
 
         /**

@@ -129,7 +129,7 @@ public class LaCAM_Solver extends A_Solver {
             this.blockedLocations = new HashSet<>();
             List<Agent> newAgentsList = new ArrayList<>();
             for (Agent agent : instance.agents) {
-                if (agent.isUA) {
+                if (agent.target.equals(agent.source)) {
                     boolean shouldBeStatic = (this.staticUA == null || this.staticUA.contains(agent));
                     if (shouldBeStatic) {
                         this.blockedLocations.add(instance.map.getMapLocation(agent.source));
@@ -867,7 +867,7 @@ public class LaCAM_Solver extends A_Solver {
     }
 
     private boolean isUA(Agent a) {
-        return a.isUA;
+        return a.source.equals(a.target);
     }
 
     private I_Location getSource(Agent a) {

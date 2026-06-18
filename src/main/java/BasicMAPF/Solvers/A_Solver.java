@@ -185,7 +185,7 @@ public abstract class A_Solver implements I_Solver{
 
                 // ===== ספירת Assigned / Unassigned (לא תלוי בפתרון) =====
                 for (BasicMAPF.Instances.Agent a : this.instance.agents) {
-                    boolean isAssigned = !a.isUA;
+                    boolean isAssigned = !java.util.Objects.equals(a.source, a.target);
                     if (isAssigned) assignedStart++;
                     else unassignedStart++;
                 }
@@ -208,7 +208,7 @@ public abstract class A_Solver implements I_Solver{
                 // ===== ספירת צעדים (רק אם יש פתרון) =====
                 for (BasicMAPF.Instances.Agent a : this.instance.agents) {
 
-                    boolean isAssigned = !a.isUA;
+                    boolean isAssigned = !java.util.Objects.equals(a.source, a.target);
                     BasicMAPF.DataTypesAndStructures.SingleAgentPlan plan = solution.getPlanFor(a);
                     if (plan == null) continue;
 
