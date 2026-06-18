@@ -1,16 +1,21 @@
 package TransientMAPF.dummyGoals;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeMap;
+
+import org.jetbrains.annotations.Nullable;
+
 import BasicMAPF.Instances.Agent;
 import BasicMAPF.Instances.MAPF_Instance;
 import BasicMAPF.Instances.Maps.I_ExplicitMap;
 import BasicMAPF.Instances.Maps.I_Location;
 import BasicMAPF.Solvers.AStar.CostsAndHeuristics.DistanceTableSingleAgentHeuristic;
 import BasicMAPF.Solvers.AStar.CostsAndHeuristics.SingleAgentGAndH;
-import org.jetbrains.annotations.Nullable;
-
-import java.awt.*;
-import java.util.List;
-import java.util.*;
 
 public class HighestDegreeAndClosestDummyGoals implements I_DummyGoalsHeuristics{
     @Override

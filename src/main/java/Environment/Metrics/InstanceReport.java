@@ -11,19 +11,16 @@ import java.util.*;
  */
 public class InstanceReport {
 
-    /**
-     * max cell size of Excel, plus room for wrapping with "" plus some safety
-     */
-    private static final int EXCEL_MAX_STRING_SIZE = 32767 - 12;
+
     /**
      * A more reasonable max size for a string field than {@link #EXCEL_MAX_STRING_SIZE}
      */
     public static final int MAX_STRING_SIZE = 10000;
     public static final String EXTENSION_STRING = " - Extended ";
 
-    private Map<String, String> stringFields = new HashMap<String, String>(8);
-    private Map<String, Integer> integerFields = new HashMap<String, Integer>(8);
-    private Map<String, Float> floatFields = new HashMap<String, Float>(4);
+    private final Map<String, String> stringFields = new HashMap<String, String>(8);
+    private final Map<String, Integer> integerFields = new HashMap<String, Integer>(8);
+    private final Map<String, Float> floatFields = new HashMap<String, Float>(4);
     private boolean isCommited = false;
     public boolean keepSolutionString = true;
 
@@ -76,25 +73,6 @@ public class InstanceReport {
      * null if it didn't exist. also returns null if the field (fieldName) already exists, but with a different type, or
      * it the fieldName contains {@link #EXTENSION_STRING}.
      */
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-//     public String putStringValue(String fieldName, String fieldValue){
-//         if(fieldName.equals(StandardFields.solution) && !keepSolutionString){return null;}
-//         if(!canPutToMap(fieldName, stringFields)) {return null;}
-//         if(fieldName.contains(EXTENSION_STRING)) {return null;}
-//         removeExtensions(fieldName);
-//         if(fieldValue.length() > MAX_STRING_SIZE){ //split if too large, to display properly in excel
-//             //nicetohave -  this wasn't displaying properly so I just made it keep only the first part of the solution. May fix to keep entire solution
-// //            return putStringInParts(fieldName, fieldValue);
-//             return this.stringFields.put(fieldName, fieldValue.substring(0, MAX_STRING_SIZE - 9) + "...");
-//         }
-//         else{
-//             //wrap with " for csv compliance
-//             return this.stringFields.put(fieldName, fieldValue);
-//         }
-//     }
-
     public String putStringValue(String fieldName, String fieldValue){
         if (fieldValue == null) fieldValue = "";
         if(fieldName.equals(StandardFields.solution) && !keepSolutionString){return null;}
@@ -109,7 +87,6 @@ public class InstanceReport {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * When a String field is too long, it is extended. This removes those extensions if they exist. It is necessary to
@@ -124,26 +101,6 @@ public class InstanceReport {
             done = oldValue == null;
             extensionIndex++;
         }
-    }
-
-    private String putStringInParts(String fieldName, String fieldValue) {
-        int extensionIndex = 0;
-        int i = 0;
-        String result = null;
-        for (; i < fieldValue.length(); i+= MAX_STRING_SIZE ) {
-            //create substring
-            int endSubstringIndex = Math.min(i + MAX_STRING_SIZE, fieldValue.length());
-            String wrappedSubstring = fieldValue.substring(i, endSubstringIndex);
-
-            if(extensionIndex == 0){ // not an extension yet, use original field name.
-                result = stringFields.put(fieldName, wrappedSubstring);
-            }
-            else { //is an extension
-                stringFields.put(extensionFieldName(fieldName, extensionIndex), wrappedSubstring);
-            }
-            extensionIndex++;
-        }
-        return result;
     }
 
     private String extensionFieldName(String originalFieldName, int extensionIndex){
@@ -190,7 +147,6 @@ public class InstanceReport {
         if(!canPutToMap(fieldName, floatFields)) {return null;}
         return this.floatFields.put(fieldName, fieldValue);
     }
-
 
     /**
      * @param fieldName the name of the field. @NotNull
@@ -350,5 +306,4 @@ public class InstanceReport {
             return true;
         }
     }
-
 }
