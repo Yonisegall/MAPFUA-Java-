@@ -1,0 +1,909 @@
+package BasicMAPF.Solvers;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+
+import org.jetbrains.annotations.NotNull;
+
+import BasicMAPF.CostFunctions.ConflictsCount;
+import BasicMAPF.CostFunctions.FuelAssigned;
+import BasicMAPF.CostFunctions.I_SolutionCostFunction;
+import BasicMAPF.CostFunctions.SumFuel;
+import BasicMAPF.CostFunctions.SumNUA;
+import BasicMAPF.CostFunctions.SumServiceTimes;
+import BasicMAPF.CostFunctions.SumServiceTimesAll;
+import BasicMAPF.DataTypesAndStructures.MDDs.OnePathAStarMDDBuilderFactory;
+import BasicMAPF.Solvers.AStar.SingleAgentAStarSIPPS_Solver;
+import BasicMAPF.Solvers.AStar.SingleAgentAStarSIPP_Solver;
+import BasicMAPF.Solvers.AStar.SingleAgentAStar_Solver;
+import BasicMAPF.Solvers.AStart_OD.AStarOD_Solver;
+import BasicMAPF.Solvers.AStart_OD.AStartOD_Builder;
+import BasicMAPF.Solvers.AStart_OD.MinNUAAStarODLaCAM_Solver;
+import BasicMAPF.Solvers.AStart_OD.MinNUAAStarOD_Solver;
+import BasicMAPF.Solvers.CBS.CBSBuilder;
+import BasicMAPF.Solvers.CBS.CBS_Solver;
+import BasicMAPF.Solvers.ICTS.HighLevel.ICTS_Solver;
+import BasicMAPF.Solvers.LaCAM.LaCAMBuilder;
+import BasicMAPF.Solvers.LaCAM.LaCAM_Solver;
+import BasicMAPF.Solvers.LargeNeighborhoodSearch.LNSBuilder;
+import BasicMAPF.Solvers.LargeNeighborhoodSearch.LargeNeighborhoodSearch_Solver;
+import BasicMAPF.Solvers.LargeNeighborhoodSearch.solutionsGeneratorForLNS2;
+import BasicMAPF.Solvers.MultiAgentAStar.MAAStarStateCompLexical;
+import BasicMAPF.Solvers.MultiAgentAStar.MultiAgentAStar;
+import BasicMAPF.Solvers.MultiAgentAStar.MultiAgentAStarOperatorDecomp;
+import BasicMAPF.Solvers.PIBT.PIBT_Solver;
+import BasicMAPF.Solvers.PathAndPrioritySearch.NaivePaPS;
+import BasicMAPF.Solvers.PathAndPrioritySearch.NaivePaPSUnifiedOpenPCSRG;
+import BasicMAPF.Solvers.PathAndPrioritySearch.PCSCompLexical;
+import BasicMAPF.Solvers.PathAndPrioritySearch.PaPSBuilder;
+import BasicMAPF.Solvers.PathAndPrioritySearch.PathAndPrioritySearch;
+import BasicMAPF.Solvers.PrioritisedPlanning.PrioritisedPlanning_Solver;
+import BasicMAPF.Solvers.PrioritisedPlanning.RestartsStrategy;
+import TransientMAPF.TransientMAPFSettings;
+
+public class CanonicalSolversFactory {
+    public final static String PP_NAME = "PP";
+    public final static String PPt_NAME = "PPt";
+    public final static String PP_SIPP_NAME = "PP_SIPP";
+    public final static String PP_SIPPt_NAME = "PP_SIPPt";
+    public final static String PP_RR_ANYTIME_NAME = "PP_RR";
+    public final static String PPt_RR_ANYTIME_NAME = "PPt_RR";
+    public final static String PP_SIPP_RR_ANYTIME_NAME = "PP_SIPP_RR";
+    public final static String PPt_SIPP_RR_ANYTIME_NAME = "PPt_SIPP_RR";
+    public final static String PP_RR_UNTIL_FIRST_SOLUTION_NAME = "PP_RR_UntilFirstSolution";
+    public final static String PP_DR_UNTIL_FIRST_SOLUTION_NAME = "PP_DR_UntilFirstSolution";
+    public final static String PPRStar_ANYTIME_NAME = "PPRStar";
+    public final static String CBS_NAME = "CBS";
+    public final static String CBS_SIPP_NAME = "CBS_SIPP";
+    public final static String CBSt_NAME = "CBSt";
+    public final static String ICTS_NAME = "ICTS";
+    public final static String PIBT_NAME = "PIBT";
+    public final static String PIBTt_NAME = "PIBTt";
+    public final static String LACAM_NAME = "LaCAM";
+    public final static String LaCAMt_NAME = "LaCAMt";
+    public final static String LNS1_NAME = "LNS1";
+    public final static String LNS1_SIPP_NAME = "LNS1_SIPP";
+    public final static String LNS1_SIPPt_NAME = "LNS1_SIPPt";
+    public final static String LNS1t_NAME = "LNS1t";
+    public final static String LNS2_NAME = "LNS2";
+    public final static String LNS2t_NAME = "LNS2t";
+    public final static String PCS_NAME = "PCS";
+    public final static String PCS_LEXICAL_NAME = "PCS_Lexical";
+    public final static String PaPS_NAME = "PaPS";
+    public final static String NAIVE_PaPS_NAME = "NaivePaPS";
+    public final static String NAIVE_PaPS_UNIFIED_OPEN_NAME = "NaivePaPSUnifiedOpen";
+    public final static String PFCS_NAME = "PFCS";
+    public final static String NAIVE_PFCS_UNIFIED_OPEN_NAME = "NaivePFCSUnifiedOpen";
+    public final static String ASTAR_NAME = "AStar";
+    public final static String SIPP_NAME = "SIPP";
+    public final static String SIPPS_NAME = "SIPPS";
+    public final static String PIE_NAME = "PIE";
+    public final static String PIEt_NAME = "PIEt";
+    public final static String PIE_SIPP_NAME = "PIE_SIPP";
+    public final static String PIE_SIPPt_NAME = "PIE_SIPPt";
+    public final static String MAASTAR_NAME = "MAAStar";
+    public final static String MAASTAR_LEXICAL_NAME = "MAAStar_Lexical";
+    public final static String MAASTAR_OD_NAME = "MAAStarOD";
+    public final static String MAASTAR_OD_LEXICAL_NAME = "MAAStarOD_Lexical";
+    public final static String MINNUA_CBS_NAME = "MinNUA_CBS";
+
+    public final static String AStartOD_NAME = "AStarOD";
+    public final static String MINNUA_OD_NAME = "MinNUA_AStarOD";
+    public final static String MINNUA_OD_LACAM_NAME = "MinNUA_AStarOD_LaCAM";
+
+
+    // A map of solver names to their registrations.
+    private static final Map<String, SolverRegistration<? extends I_Solver>> registrations;
+
+    static {
+        Map<String, SolverRegistration<? extends I_Solver>> regs = new HashMap<>();
+
+        regs.put(PP_NAME, new SolverRegistration<>(
+                PP_NAME,
+                "Prioritised Planning - single rollout, no restarts",
+                CanonicalSolversFactory::createPPSolver
+        ));
+
+        regs.put(PPt_NAME, new SolverRegistration<>(
+                PPt_NAME,
+                "Prioritised Planning with Transient MAPF - single rollout, no restarts",
+                CanonicalSolversFactory::createPPtSolver
+        ));
+
+        regs.put(PP_SIPP_NAME, new SolverRegistration<>(
+                PP_SIPP_NAME,
+                "Prioritised Planning using SIPP - single rollout, no restarts",
+                CanonicalSolversFactory::createPPSIPPSolver
+        ));
+
+        regs.put(PP_SIPPt_NAME, new SolverRegistration<>(
+                PP_SIPPt_NAME,
+                "Prioritised Planning using SIPP with Transient MAPF - single rollout, no restarts",
+                CanonicalSolversFactory::createPPSIPPtSolver
+        ));
+
+        regs.put(PP_RR_ANYTIME_NAME, new SolverRegistration<>(
+                PP_RR_ANYTIME_NAME,
+                "Prioritised Planning - infinite random ordering restarts",
+                CanonicalSolversFactory::createPPRRAnytimeSolver
+        ));
+
+        regs.put(PPt_RR_ANYTIME_NAME, new SolverRegistration<>(
+                PPt_RR_ANYTIME_NAME,
+                "Prioritised Planning with Transient MAPF - infinite random ordering restarts",
+                CanonicalSolversFactory::createPPtRRAnytimeSolver
+        ));
+
+        regs.put(PP_SIPP_RR_ANYTIME_NAME, new SolverRegistration<>(
+                PP_SIPP_RR_ANYTIME_NAME,
+                "Prioritised Planning using SIPP - infinite random ordering restarts",
+                CanonicalSolversFactory::createPPSIPPRRAnytimeSolver
+        ));
+
+        regs.put(PPt_SIPP_RR_ANYTIME_NAME, new SolverRegistration<>(
+                PPt_SIPP_RR_ANYTIME_NAME,
+                "Prioritised Planning using SIPP with Transient MAPF - infinite random ordering restarts",
+                CanonicalSolversFactory::createPPtSIPPRRAnytimeSolver
+        ));
+
+        regs.put(PP_RR_UNTIL_FIRST_SOLUTION_NAME, new SolverRegistration<>(
+                PP_RR_UNTIL_FIRST_SOLUTION_NAME,
+                "Prioritised Planning - random ordering restarts until first solution",
+                CanonicalSolversFactory::createPPRRUntilFirstSolutionSolver
+        ));
+
+        regs.put(PP_DR_UNTIL_FIRST_SOLUTION_NAME, new SolverRegistration<>(
+                PP_DR_UNTIL_FIRST_SOLUTION_NAME,
+                "Prioritised Planning - deterministic rescheduling until first solution",
+                CanonicalSolversFactory::createPPDRUntilFirstSolutionSolver
+        ));
+
+        regs.put(PPRStar_ANYTIME_NAME, new SolverRegistration<>(
+                PPRStar_ANYTIME_NAME,
+                "Prioritised Planning with Randomised A* - infinite random restarts with random A* seeds",
+                CanonicalSolversFactory::createPPRStarAnytimeSolver
+        ));
+
+        regs.put(CBS_NAME, new SolverRegistration<>(
+                CBS_NAME,
+                "Conflict Based Search",
+                CanonicalSolversFactory::createCBSSolver
+        ));
+
+        regs.put(AStartOD_NAME, new SolverRegistration<>(
+                AStartOD_NAME,
+                "A*+OD coupled solver",
+                CanonicalSolversFactory::createAStartODSolver
+        ));
+
+        regs.put(CBS_SIPP_NAME, new SolverRegistration<>(
+                CBS_SIPP_NAME,
+                "Conflict Based Search using SIPP",
+                CanonicalSolversFactory::createCBS_SIPPSolver
+        ));
+
+        regs.put(CBSt_NAME, new SolverRegistration<>(
+                CBSt_NAME,
+                "Conflict Based Search with Transient MAPF",
+                CanonicalSolversFactory::createCBStSolver
+        ));
+
+        regs.put(ICTS_NAME, new SolverRegistration<>(
+                ICTS_NAME,
+                "Increasing Cost Tree Search",
+                CanonicalSolversFactory::createICTSSolver
+        ));
+
+        regs.put(PIBT_NAME, new SolverRegistration<>(
+                PIBT_NAME,
+                "Priority Inheritance with Backtracking",
+                CanonicalSolversFactory::createPIBTSolver
+        ));
+
+        regs.put(PIBTt_NAME, new SolverRegistration<>(
+                PIBTt_NAME,
+                "Priority Inheritance with Backtracking with Transient MAPF",
+                CanonicalSolversFactory::createPIBTtSolver
+        ));
+
+        regs.put(LACAM_NAME, new SolverRegistration<>(
+                LACAM_NAME,
+                "Lazy Constraints Addition Search",
+                CanonicalSolversFactory::createLaCAMSolver
+        ));
+
+        regs.put(LaCAMt_NAME, new SolverRegistration<>(
+                LaCAMt_NAME,
+                "Lazy Constraints Addition Search with Transient MAPF",
+                CanonicalSolversFactory::createLaCAMtSolver
+        ));
+
+        regs.put(LNS1_NAME, new SolverRegistration<>(
+                LNS1_NAME,
+                "(Adaptive) Large Neighborhood Search 1, with Random, Map-based, and Agent-based destroy heuristics",
+                CanonicalSolversFactory::createLNS1Solver
+        ));
+
+        regs.put(LNS1_SIPP_NAME, new SolverRegistration<>(
+                LNS1_SIPP_NAME,
+                "(Adaptive) Large Neighborhood Search 1 using SIPP",
+                CanonicalSolversFactory::createLNS1SIPPSolver
+        ));
+
+        regs.put(LNS1_SIPPt_NAME, new SolverRegistration<>(
+                LNS1_SIPPt_NAME,
+                "(Adaptive) Large Neighborhood Search 1 using SIPPt with Transient MAPF",
+                CanonicalSolversFactory::createLNS1SIPPtSolver
+        ));
+
+        regs.put(LNS1t_NAME, new SolverRegistration<>(
+                LNS1t_NAME,
+                "(Adaptive) Large Neighborhood Search 1 with Transient MAPF",
+                CanonicalSolversFactory::createLNS1tSolver
+        ));
+
+        regs.put(LNS2_NAME, new SolverRegistration<>(
+                LNS2_NAME,
+                // Experiments showed using just Collision-based generally performed best.
+                "Large Neighborhood Search 2, with Collision-based destroy heuristic",
+                CanonicalSolversFactory::createLNS2Solver
+        ));
+
+        regs.put(LNS2t_NAME, new SolverRegistration<>(
+                LNS2t_NAME,
+                "Large Neighborhood Search 2, with Collision-based destroy heuristic, with Transient MAPF",
+                CanonicalSolversFactory::createLNS2tSolver
+        ));
+
+        regs.put(PCS_NAME, new SolverRegistration<>(
+                PCS_NAME,
+                "Priority Constrained Search",
+                CanonicalSolversFactory::createPCSSolver
+        ));
+
+        regs.put(PCS_LEXICAL_NAME, new SolverRegistration<>(
+                PCS_LEXICAL_NAME,
+                "Priority Constrained Search with Lexical cost function",
+                CanonicalSolversFactory::createPCSLexicalSolver
+        ));
+
+        regs.put(PaPS_NAME, new SolverRegistration<>(
+                PaPS_NAME,
+                "Path and Priority Search",
+                CanonicalSolversFactory::createPaPSSolver
+        ));
+
+        regs.put(NAIVE_PaPS_NAME, new SolverRegistration<>(
+                NAIVE_PaPS_NAME,
+                "Naive Path and Priority Search",
+                CanonicalSolversFactory::createNaivePaPSSolver
+        ));
+
+        regs.put(NAIVE_PaPS_UNIFIED_OPEN_NAME, new SolverRegistration<>(
+                NAIVE_PaPS_UNIFIED_OPEN_NAME,
+                "Naive Path and Priority Search with Unified Open List",
+                CanonicalSolversFactory::createNaivePaPSUnifiedOpenSolver
+        ));
+
+        regs.put(PFCS_NAME, new SolverRegistration<>(
+                PFCS_NAME,
+                "Path-Function Constrained Search",
+                CanonicalSolversFactory::createPFCSSolver
+        ));
+
+        regs.put(NAIVE_PFCS_UNIFIED_OPEN_NAME, new SolverRegistration<>(
+                NAIVE_PFCS_UNIFIED_OPEN_NAME,
+                "Naive Path-Function Constrained Search with Unified Open List",
+                CanonicalSolversFactory::createNaivePFCSUnifiedOpenSolver
+        ));
+
+        regs.put(ASTAR_NAME, new SolverRegistration<>(
+                ASTAR_NAME,
+                "Single Agent A*",
+                CanonicalSolversFactory::createAStarSolver
+        ));
+
+        regs.put(SIPP_NAME, new SolverRegistration<>(
+                SIPP_NAME,
+                "Safe Interval Path Planning",
+                CanonicalSolversFactory::createSIPPSolver
+        ));
+
+        regs.put(SIPPS_NAME, new SolverRegistration<>(
+                SIPPS_NAME,
+                " Safe Interval Path Planning with Soft constraints",
+                CanonicalSolversFactory::createSIPPSSolver
+        ));
+
+        regs.put(MAASTAR_NAME, new SolverRegistration<>(
+                MAASTAR_NAME,
+                "Multi-Agent A* - joint state space search",
+                CanonicalSolversFactory::createMultiAgentAStarSolver
+        ));
+
+        regs.put(MAASTAR_LEXICAL_NAME, new SolverRegistration<>(
+                MAASTAR_LEXICAL_NAME,
+                "Multi-Agent A* - joint state space search. Using Lexical cost function",
+                CanonicalSolversFactory::createMultiAgentAStarLexicalSolver
+        ));
+
+        regs.put(MAASTAR_OD_NAME, new SolverRegistration<>(
+                MAASTAR_OD_NAME,
+                "Multi-Agent A* - operator decomposition search",
+                CanonicalSolversFactory::createMultiAgentAStarOperatorDecompSolver
+        ));
+
+        regs.put(MAASTAR_OD_LEXICAL_NAME, new SolverRegistration<>(
+                MAASTAR_OD_LEXICAL_NAME,
+                "Multi-Agent A* - operator decomposition search. Using Lexical cost function",
+                CanonicalSolversFactory::createMultiAgentAStarOperatorDecompLexicalSolver
+        ));
+
+        regs.put(PIE_NAME, new SolverRegistration<>(
+                PIE_NAME,
+                "Planning and Improving while Executing",
+                CanonicalSolversFactory::createPIESolver
+        ));
+
+        regs.put(PIEt_NAME, new SolverRegistration<>(
+                PIEt_NAME,
+                "Planning and Improving while Executing with Transient MAPF",
+                CanonicalSolversFactory::createPIEtSolver
+        ));
+
+        regs.put(PIE_SIPP_NAME, new SolverRegistration<>(
+                PIE_SIPP_NAME,
+                "Planning and Improving while Executing using SIPP",
+                CanonicalSolversFactory::createPIESIPPSolver
+        ));
+
+        regs.put(PIE_SIPPt_NAME, new SolverRegistration<>(
+                PIE_SIPPt_NAME,
+                "Planning and Improving while Executing using SIPP with Transient MAPF",
+                CanonicalSolversFactory::createPIESIPPtSolver
+        ));
+
+        regs.put(MINNUA_CBS_NAME, new SolverRegistration<>(
+                MINNUA_CBS_NAME,
+                "Minimising number of moved UA via CBS subset search (MinNUA_CBS)",
+                CanonicalSolversFactory::createMinNUACBSSolver
+        ));
+
+        regs.put(MINNUA_OD_NAME, new SolverRegistration<>(
+                MINNUA_OD_NAME,
+                "Minimising number of moved UA via A* subset search (MinNUA_OD)",
+                CanonicalSolversFactory::createAStarOD_UA_NUA_Solver
+        ));
+
+        regs.put(MINNUA_OD_LACAM_NAME, new SolverRegistration<>(
+                MINNUA_OD_LACAM_NAME,
+                "Minimising number of moved UA via A* subset search (MinNUA_OD_LaCAM)",
+                CanonicalSolversFactory::createAStarODLaCAM_UA_NUA_Solver
+        ));
+
+        registrations = Collections.unmodifiableMap(regs);
+    }
+
+    /**
+     * Factory method to create a solver by its name.
+     */
+    public static I_Solver createSolver(@NotNull String name) {
+        SolverRegistration<? extends I_Solver> reg = registrations.get(name);
+        if (reg == null) {
+            throw new IllegalArgumentException("Unknown solver name: " + name);
+        }
+        return reg.create();
+    }
+
+    public static String getDescription(@NotNull String name) {
+        SolverRegistration<? extends I_Solver> reg = registrations.get(name);
+        if (reg == null) {
+            throw new IllegalArgumentException("Unknown solver name: " + name);
+        }
+        return reg.description();
+    }
+
+    /**
+     * Get a sorted list of all solver names.
+     */
+    public static Iterable<String> getSolverNames() {
+        List<String> names = new ArrayList<>(registrations.keySet());
+        names.sort(Comparator.naturalOrder());
+        return names;
+    }
+
+    public static PrioritisedPlanning_Solver createPPSolver() {
+        return new PrioritisedPlanning_Solver(
+                null, null, null,
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.none, 1,
+                        RestartsStrategy.reorderingStrategy.none, null),
+                null, null, null);
+    }
+
+    public static PrioritisedPlanning_Solver createPPtSolver() {
+        return new PrioritisedPlanning_Solver(
+                null, null, new SumServiceTimes(),
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.none, 1,
+                        RestartsStrategy.reorderingStrategy.none, null),
+                null, null, TransientMAPFSettings.defaultTransientMAPF);
+    }
+
+    public static PrioritisedPlanning_Solver createPPSIPPSolver() {
+        return new PrioritisedPlanning_Solver(
+                createSIPPSolver(), null, null,
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.none, 1,
+                        RestartsStrategy.reorderingStrategy.none, null),
+                null, null, null);
+    }
+
+    public static PrioritisedPlanning_Solver createPPSIPPtSolver() {
+        return new PrioritisedPlanning_Solver(
+                createSIPPSolver(), null, new SumServiceTimes(),
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.none, 1,
+                        RestartsStrategy.reorderingStrategy.none, null),
+                null, null, TransientMAPFSettings.defaultTransientMAPF);
+    }
+
+    public static PrioritisedPlanning_Solver createPPRRAnytimeSolver() {
+        return new PrioritisedPlanning_Solver(
+                null, null, null,
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.randomRestarts, Integer.MAX_VALUE,
+                        RestartsStrategy.reorderingStrategy.none, null),
+                null, null, null);
+    }
+
+    public static PrioritisedPlanning_Solver createPPtRRAnytimeSolver() {
+        return new PrioritisedPlanning_Solver(
+                null, null, new SumServiceTimes(),
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.randomRestarts, Integer.MAX_VALUE,
+                        RestartsStrategy.reorderingStrategy.none, null),
+                null, null, TransientMAPFSettings.defaultTransientMAPF);
+    }
+
+    public static PrioritisedPlanning_Solver createPPSIPPRRAnytimeSolver() {
+        return new PrioritisedPlanning_Solver(
+                createSIPPSolver(), null, null,
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.randomRestarts, Integer.MAX_VALUE,
+                        RestartsStrategy.reorderingStrategy.none, null),
+                null, null, null);
+    }
+
+    public static PrioritisedPlanning_Solver createPPtSIPPRRAnytimeSolver() {
+        return new PrioritisedPlanning_Solver(
+                createSIPPSolver(), null, new SumServiceTimes(),
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.randomRestarts, Integer.MAX_VALUE,
+                        RestartsStrategy.reorderingStrategy.none, null),
+                null, null, TransientMAPFSettings.defaultTransientMAPF);
+    }
+
+    public static PrioritisedPlanning_Solver createPPRRUntilFirstSolutionSolver() {
+        return new PrioritisedPlanning_Solver(
+                null, null, null,
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.none, null,
+                        RestartsStrategy.reorderingStrategy.randomRestarts, null),
+                null, null, null);
+    }
+
+    public static PrioritisedPlanning_Solver createPPDRUntilFirstSolutionSolver() {
+        return new PrioritisedPlanning_Solver(
+                null, null, null,
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.none, null,
+                        RestartsStrategy.reorderingStrategy.deterministicRescheduling, null),
+                null, null, null);
+    }
+
+    public static PrioritisedPlanning_Solver createPPRStarAnytimeSolver() {
+        return new PrioritisedPlanning_Solver(
+                null, null, null,
+                new RestartsStrategy(RestartsStrategy.reorderingStrategy.none, Integer.MAX_VALUE,
+                        RestartsStrategy.reorderingStrategy.none, true),
+                null, null, null);
+    }
+
+    public static CBS_Solver createCBSSolver() {return new CBSBuilder().createCBS_Solver();}
+
+    public static AStarOD_Solver createAStartODSolver() {return new AStartOD_Builder().createAStarOD();}
+
+    public static CBS_Solver createCBS_SIPPSolver() {return new CBSBuilder().setLowLevelSolver(new SingleAgentAStarSIPP_Solver()).createCBS_Solver();}
+
+    public static CBS_Solver createCBStSolver() {return new CBSBuilder().setCostFunction(new SumServiceTimes()).setTransientMAPFSettings(TransientMAPFSettings.defaultTransientMAPF).createCBS_Solver();}
+
+    public static ICTS_Solver createICTSSolver() {return new ICTS_Solver();}
+
+    public static PIBT_Solver createPIBTSolver() {return new PIBT_Solver(null, null, TransientMAPFSettings.defaultRegularMAPF);}
+
+    public static PIBT_Solver createPIBTtSolver() {return new PIBT_Solver(null, null, TransientMAPFSettings.defaultTransientMAPF);}
+
+    public static LaCAM_Solver createLaCAMSolver() {return new LaCAMBuilder().createLaCAM();}
+
+    public static LaCAM_Solver createLaCAMtSolver() {return new LaCAMBuilder().setTransientMAPFBehaviour(TransientMAPFSettings.defaultTransientMAPF).createLaCAM();}
+    
+    public static LaCAM_Solver createLaCAMtStaticSolver() {return new LaCAMBuilder().setTransientMAPFBehaviour(TransientMAPFSettings.defaultTransientMAPF).setStaticObstaclesForUnassignedAgents(true).createLaCAM();}
+
+    public static LargeNeighborhoodSearch_Solver createLNS1Solver() {return new LNSBuilder().createLNS();}
+
+    public static LargeNeighborhoodSearch_Solver createLNS1tSolver() {
+        PrioritisedPlanning_Solver initialSolver = new PrioritisedPlanning_Solver(new SingleAgentAStarSIPP_Solver(), null, new SumServiceTimes(), new RestartsStrategy(RestartsStrategy.reorderingStrategy.none, 1, RestartsStrategy.reorderingStrategy.randomRestarts, null), null, null, TransientMAPFSettings.defaultTransientMAPF);
+        return new LNSBuilder().setInitialSolver(initialSolver).setIterationsSolver(createPPtSolver()).setSolutionCostFunction(new SumServiceTimes()).setTransientMAPFBehaviour(TransientMAPFSettings.defaultTransientMAPF).createLNS();
+    }
+
+    public static LargeNeighborhoodSearch_Solver createLNS1SIPPSolver() {
+        PrioritisedPlanning_Solver initialSolver = new PrioritisedPlanning_Solver(new SingleAgentAStarSIPP_Solver(), null, null, new RestartsStrategy(RestartsStrategy.reorderingStrategy.none, 1, RestartsStrategy.reorderingStrategy.randomRestarts, null), null, null, null);
+        return new LNSBuilder().setInitialSolver(initialSolver).setIterationsSolver(createPPSIPPSolver()).createLNS();
+    }
+
+    public static LargeNeighborhoodSearch_Solver createLNS1SIPPtSolver() {
+        PrioritisedPlanning_Solver initialSolverTransient = new PrioritisedPlanning_Solver(new SingleAgentAStarSIPP_Solver(), null, new SumServiceTimes(), new RestartsStrategy(RestartsStrategy.reorderingStrategy.none, 1, RestartsStrategy.reorderingStrategy.randomRestarts, null), null, null, TransientMAPFSettings.defaultTransientMAPF);
+        return new LNSBuilder().setInitialSolver(initialSolverTransient).setIterationsSolver(createPPSIPPtSolver()).setTransientMAPFBehaviour(TransientMAPFSettings.defaultTransientMAPF).setSolutionCostFunction(new SumServiceTimes()).createLNS();
+    }
+
+    public static LargeNeighborhoodSearch_Solver createLNS2Solver() {
+        return new LNSBuilder().setInitialSolver(new solutionsGeneratorForLNS2()).setIterationsSolver(new solutionsGeneratorForLNS2()).setSolutionCostFunction(new ConflictsCount(false, false)).setLNS2(true).createLNS();
+    }
+
+    public static LargeNeighborhoodSearch_Solver createLNS2tSolver() {
+        return new LNSBuilder().setInitialSolver(new solutionsGeneratorForLNS2(null, TransientMAPFSettings.defaultTransientMAPF, null, null, null))
+                .setIterationsSolver(new solutionsGeneratorForLNS2(null, TransientMAPFSettings.defaultTransientMAPF, null, null, null))
+                .setSolutionCostFunction(new ConflictsCount(false, false)).setLNS2(true).setTransientMAPFBehaviour(TransientMAPFSettings.defaultTransientMAPF).createLNS();
+    }
+
+    public static PathAndPrioritySearch createPCSSolver() {
+        PathAndPrioritySearch pcsSolver = new PaPSBuilder().setNoAgentsSplit(true).createPaPS();
+        pcsSolver.setName(PCS_NAME);
+        return pcsSolver;
+    }
+
+    public static PathAndPrioritySearch createPCSLexicalSolver() {
+        PathAndPrioritySearch pcsLexicalSolver = new PaPSBuilder().setNoAgentsSplit(true).setNodeComparator(PCSCompLexical.DEFAULT_INSTANCE).createPaPS();
+        pcsLexicalSolver.setName(PCS_LEXICAL_NAME);
+        return pcsLexicalSolver;
+    }
+
+    public static PathAndPrioritySearch createPaPSSolver() {
+        PathAndPrioritySearch PaPS = new PaPSBuilder().createPaPS();
+        PaPS.setName(PaPS_NAME);
+        return PaPS;
+    }
+
+    public static NaivePaPS createNaivePaPSSolver() {
+        return new NaivePaPS(null, null, -1);
+    }
+
+    public static PathAndPrioritySearch createNaivePaPSUnifiedOpenSolver() {
+        PathAndPrioritySearch unifiedOpenSolver = new PaPSBuilder().setRootGenerator(new NaivePaPSUnifiedOpenPCSRG()).createPaPS();
+        unifiedOpenSolver.setName(NAIVE_PaPS_UNIFIED_OPEN_NAME);
+        return unifiedOpenSolver;
+    }
+
+    public static PathAndPrioritySearch createPFCSSolver() {
+        PathAndPrioritySearch pfcsSolver = new PaPSBuilder().setMddSearcherFactory(new OnePathAStarMDDBuilderFactory()).createPaPS();;
+        pfcsSolver.setName(PFCS_NAME);
+        return pfcsSolver;
+    }
+
+    public static PathAndPrioritySearch createNaivePFCSUnifiedOpenSolver() {
+        PathAndPrioritySearch PFCSUnifiedOpenSolver = new PaPSBuilder().setMddSearcherFactory(new OnePathAStarMDDBuilderFactory()).setRootGenerator(new NaivePaPSUnifiedOpenPCSRG()).createPaPS();
+        PFCSUnifiedOpenSolver.setName(NAIVE_PFCS_UNIFIED_OPEN_NAME);
+        return PFCSUnifiedOpenSolver;
+    }
+
+    public static SingleAgentAStar_Solver createAStarSolver() {
+        SingleAgentAStar_Solver solver = new SingleAgentAStar_Solver();
+        solver.setName(ASTAR_NAME);
+        return solver;
+    }
+
+    public static SingleAgentAStarSIPP_Solver createSIPPSolver() {
+        SingleAgentAStarSIPP_Solver solver = new SingleAgentAStarSIPP_Solver();
+        solver.setName(SIPP_NAME);
+        return solver;
+    }
+
+    public static SingleAgentAStarSIPPS_Solver createSIPPSSolver() {
+        SingleAgentAStarSIPPS_Solver solver = new SingleAgentAStarSIPPS_Solver();
+        solver.setName(SIPPS_NAME);
+        return solver;
+    }
+
+    public static MultiAgentAStar createMultiAgentAStarSolver() {
+        MultiAgentAStar MAAStar = new MultiAgentAStar();
+        MAAStar.setName(MAASTAR_NAME);
+        return MAAStar;
+    }
+
+    public static MultiAgentAStar createMultiAgentAStarLexicalSolver() {
+        MultiAgentAStar MAAStar_Lexical = new MultiAgentAStar(MAAStarStateCompLexical.DEFAULT_INSTANCE);
+        MAAStar_Lexical.setName(MAASTAR_LEXICAL_NAME);
+        return MAAStar_Lexical;
+    }
+
+    public static MultiAgentAStarOperatorDecomp createMultiAgentAStarOperatorDecompSolver() {
+        MultiAgentAStarOperatorDecomp MAAStar_OD = new MultiAgentAStarOperatorDecomp();
+        MAAStar_OD.setName(MAASTAR_OD_NAME);
+        return MAAStar_OD;
+    }
+
+    public static MultiAgentAStarOperatorDecomp createMultiAgentAStarOperatorDecompLexicalSolver() {
+        MultiAgentAStarOperatorDecomp MAAStar_OD_Lexical = new MultiAgentAStarOperatorDecomp(MAAStarStateCompLexical.DEFAULT_INSTANCE);
+        MAAStar_OD_Lexical.setName(MAASTAR_OD_LEXICAL_NAME);
+        return MAAStar_OD_Lexical;
+    }
+
+    public static I_Solver createPIESolver() {
+        return new LNSBuilder().setInitialSolver(CanonicalSolversFactory.createLaCAMSolver()).setIterationsSolver(CanonicalSolversFactory.createPPSolver()).createLNS();
+    }
+
+    public static I_Solver createPIEtSolver() {
+        return new LNSBuilder().setInitialSolver(CanonicalSolversFactory.createLaCAMtSolver()).setIterationsSolver(CanonicalSolversFactory.createPPtSolver())
+                .setTransientMAPFBehaviour(TransientMAPFSettings.defaultTransientMAPF).setSolutionCostFunction(new SumServiceTimes()).createLNS();
+    }
+
+    public static I_Solver createPIESIPPSolver() {              
+        return new LNSBuilder().setInitialSolver(CanonicalSolversFactory.createLaCAMSolver()).setIterationsSolver(CanonicalSolversFactory.createPPSIPPSolver()).createLNS();
+    }
+
+    public static I_Solver createPIESIPPtSolver() {
+        return new LNSBuilder().setInitialSolver(CanonicalSolversFactory.createLaCAMtSolver()).setIterationsSolver(CanonicalSolversFactory.createPPSIPPtSolver())
+                .setTransientMAPFBehaviour(TransientMAPFSettings.defaultTransientMAPF).setSolutionCostFunction(new SumServiceTimes()).createLNS();
+    }
+
+///////////////////////////////////////////////////////////////////////  Dynamic UA  //////////////////////////////////////////////////////////////////////////////
+ 
+//////////////////////////////////////////////////  CBS  //////////////////////////////////////////////////////////////////////////////
+
+    private static CBS_Solver createUaCbsVariant(String variantName, I_SolutionCostFunction costFunction,
+                                                  boolean uaBypass, boolean uaFutureConflictHeuristic) {
+        CBS_Solver solver = new CBSBuilder()
+                .setCostFunction(costFunction)
+                .setTransientMAPFSettings(TransientMAPFSettings.defaultTransientMAPF)
+                .setUaAwareLowLevel(true)
+                .setUaBypass(uaBypass)
+                .setUaFutureConflictHeuristic(uaFutureConflictHeuristic)
+                .createCBS_Solver();
+        solver.setName(variantName + "_" + costFunction.name());
+        solver.setConfiguredCostFunctionName(costFunction.name());
+        return solver;
+    }
+
+    // Variant 1: assigned Manhattan heuristic; UA zero heuristic, no route look-ahead.
+    public static CBS_Solver createCBS_UA_NoHeuristic_SST_Solver() {
+        return createUaCbsVariant("CBS_UA_NoHeuristic", new SumServiceTimes(), false, false);
+    }
+
+    public static CBS_Solver createCBS_UA_NoHeuristic_Fuel_Solver() {
+        return createUaCbsVariant("CBS_UA_NoHeuristic", new SumFuel(), false, false);
+    }
+
+    public static CBS_Solver createCBS_UA_NoHeuristic_NUA_Solver() {
+        return createUaCbsVariant("CBS_UA_NoHeuristic", new SumNUA(), false, false);
+    }
+
+    // Variant 2: variant 1 plus same-node UA bypass.
+    public static CBS_Solver createCBS_UA_Bypass_SST_Solver() {
+        return createUaCbsVariant("CBS_UA_Bypass", new SumServiceTimes(), true, false);
+    }
+
+    public static CBS_Solver createCBS_UA_Bypass_Fuel_Solver() {
+        return createUaCbsVariant("CBS_UA_Bypass", new SumFuel(), true, false);
+    }
+
+    public static CBS_Solver createCBS_UA_Bypass_NUA_Solver() {
+        return createUaCbsVariant("CBS_UA_Bypass", new SumNUA(), true, false);
+    }
+
+    // Variant 3: UA BFS/Dijkstra search with future conflict avoidance.
+    public static CBS_Solver createCBS_UA_Heuristic_SST_Solver() {
+        return createUaCbsVariant("CBS_UA_Heuristic", new SumServiceTimes(), false, true);
+    }
+
+    public static CBS_Solver createCBS_UA_Heuristic_Fuel_Solver() {
+        return createUaCbsVariant("CBS_UA_Heuristic", new SumFuel(), false, true);
+    }
+
+    public static CBS_Solver createCBS_UA_Heuristic_NUA_Solver() {
+        return createUaCbsVariant("CBS_UA_Heuristic", new SumNUA(), false, true);
+    }
+
+    // Variant 4: future conflict avoidance plus same-node UA bypass.
+    public static CBS_Solver createCBS_UA_BypassHeuristic_SST_Solver() {
+        return createUaCbsVariant("CBS_UA_BypassHeuristic", new SumServiceTimes(), true, true);
+    }
+
+    public static CBS_Solver createCBS_UA_BypassHeuristic_Fuel_Solver() {
+        return createUaCbsVariant("CBS_UA_BypassHeuristic", new SumFuel(), true, true);
+    }
+
+    public static CBS_Solver createCBS_UA_BypassHeuristic_NUA_Solver() {
+        return createUaCbsVariant("CBS_UA_BypassHeuristic", new SumNUA(), true, true);
+    }
+
+    /**
+     *
+     * @return MAPF-UA problem with CBS, cost function SST
+     */
+    public static CBS_Solver createCBS_UA_SST_Solver() {
+        CBS_Solver s = new CBSBuilder()
+                .setCostFunction(new SumServiceTimes())
+                .setTransientMAPFSettings(TransientMAPFSettings.defaultTransientMAPF)
+                .createCBS_Solver();
+        s.setConfiguredCostFunctionName("SST");
+        return s;
+    }
+    /**
+     *
+     * @return MAPF-UA problem with CBS, cost function Fuel
+     */
+    public static CBS_Solver createCBS_UA_Fuel_Solver() {
+        CBS_Solver s = new CBSBuilder()
+                .setCostFunction(new SumFuel())
+                .setTransientMAPFSettings(TransientMAPFSettings.defaultTransientMAPF)
+                .createCBS_Solver();
+        s.setConfiguredCostFunctionName("FUEL");
+        return s;
+    }
+
+    /**
+     *
+     * @return Classic MAPF problem with LaCAM and CBS, cost function NUA 
+     */
+    public static BasicMAPF.Solvers.CBS.MinNUACBS_Solver createMinNUACBSSolver() {
+        return new BasicMAPF.Solvers.CBS.MinNUACBS_Solver();
+    }
+
+    /**
+     *
+     * @return Classic MAPF problem with CBS, cost function Fuel assigned 
+     */
+    public static CBS_Solver createCBS_UA_Fuel_Assigned_Solver() {
+        CBS_Solver s = new CBSBuilder()
+                .setCostFunction(new FuelAssigned())
+                .setTransientMAPFSettings(TransientMAPFSettings.defaultTransientMAPF)
+                .createCBS_Solver();
+        s.setConfiguredCostFunctionName("Fuel_Assigned");
+        return s;
+    }
+
+    /**
+     *
+     * @return Classic MAPF problem with CBS, cost function SST all 
+     */
+    public static CBS_Solver createCBS_UA_SST_ALL_Solver() {
+        CBS_Solver s = new CBSBuilder()
+                .setCostFunction(new SumServiceTimesAll())
+                .setTransientMAPFSettings(TransientMAPFSettings.defaultTransientMAPF)
+                .createCBS_Solver();
+        s.setConfiguredCostFunctionName("SST_All");
+        return s;
+    }
+
+
+
+//////////////////////////////////////////////////  A* + OD  //////////////////////////////////////////////////
+
+    /**
+     *
+     * @return MAPF-UA problem with A*+OD, cost function SST
+     */
+    public static AStarOD_Solver createAStartOD_UA_SST_Solver() {
+        AStarOD_Solver s = new AStartOD_Builder()
+              .setCostFunction(new SumServiceTimes())
+              .setTransientMAPFSettings(TransientMAPFSettings.defaultTransientMAPF)
+              .createAStarOD();
+        s.setConfiguredCostFunctionName("SST");
+        return s;
+    }
+
+    /**
+     *
+     * @return MAPF-UA problem with A*+OD, cost function Fuel
+     */
+    public static AStarOD_Solver createAStartOD_UA_Fuel_Solver() {
+        AStarOD_Solver s = new AStartOD_Builder()
+              .setCostFunction(new SumFuel())
+              .setTransientMAPFSettings(TransientMAPFSettings.defaultTransientMAPF)
+              .createAStarOD();
+        s.setConfiguredCostFunctionName("FUEL");
+        return s;
+    }
+
+    /**
+     *
+     * @return Classic MAPF problem with A*+OD, cost function NUA
+     */
+    public static MinNUAAStarOD_Solver createAStarOD_UA_NUA_Solver() {
+        return new MinNUAAStarOD_Solver();
+    }
+
+    /**
+     *
+     * @return Classic MAPF problem with LaCAM and A*+OD, cost function NUA 
+     */
+    public static MinNUAAStarODLaCAM_Solver createAStarODLaCAM_UA_NUA_Solver() {
+        return new MinNUAAStarODLaCAM_Solver();
+    }
+
+
+
+
+///////////////////////////////////////////////////////////////////////// Static UA //////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////  CBS  //////////////////////////////////////////////////
+
+
+     /**
+     *
+     * @return Classic MAPF problem with CBS, cost function SST
+     */
+    public static CBS_Solver createCBS_SST_Solver() {
+        CBS_Solver s = new CBSBuilder()
+                .setCostFunction(new SumServiceTimes())
+                .setStaticObstaclesForUnassignedAgents(true)
+                .createCBS_Solver();
+        s.setConfiguredCostFunctionName("SST");
+        return s;
+    }
+
+    /**
+     *
+     * @return Classic MAPF problem with CBS, cost function Fuel
+     */
+    public static CBS_Solver createCBS_Fuel_Solver() {
+        CBS_Solver s = new CBSBuilder()
+                .setCostFunction(new SumFuel())
+                .setStaticObstaclesForUnassignedAgents(true)
+                .createCBS_Solver();
+        s.setConfiguredCostFunctionName("FUEL");
+        return s;
+    }
+
+
+//////////////////////////////////////////////////  A* + OD  //////////////////////////////////////////////////
+
+    /**
+     *
+     * @return Classic MAPF problem with A*+OD, cost function SST
+     */
+    public static AStarOD_Solver createAStartOD_SST_Solver() {
+        AStarOD_Solver s = new AStartOD_Builder()
+                .setCostFunction(new SumServiceTimes())
+                .setStaticObstaclesForUnassignedAgents(true)
+                .createAStarOD();
+        s.setConfiguredCostFunctionName("SST");
+        return s;
+    }
+
+    /**
+     *
+     * @return Classic MAPF problem with A*+OD, cost function Fuel
+     */
+    public static AStarOD_Solver createAStartOD_Fuel_Solver() {
+        AStarOD_Solver s = new AStartOD_Builder()
+                .setCostFunction(new SumFuel())
+                .setStaticObstaclesForUnassignedAgents(true)
+                .createAStarOD();
+        s.setConfiguredCostFunctionName("FUEL");
+        return s;
+    }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ 
+
+    /**
+     * Inner record to encapsulate the registration of a solver.
+     */
+    private record SolverRegistration<T extends I_Solver>(String name, String description, Supplier<T> creator) {
+        public T create() {
+            T solver = creator.get();
+            solver.setName(name);
+            solver.setDescription(description);
+            return solver;
+        }
+    }
+}
